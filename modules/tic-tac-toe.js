@@ -1,8 +1,9 @@
 const { MessageActionRow, MessageButton, ButtonStyle, SlashCommandBuilder } = require('discord.js');
+const Bank = require('./bank.js');
 
 const PLAY = {
 	command: 'playtictactoe', 
-	description: '{Play a game of tic tac toe}'
+	description: 'Play a game of tic tac toe'
 };
 
 const BOARD = [ ['⬛','⬛','⬛',],
@@ -26,7 +27,7 @@ new Module('tic tac toe', 'message', PLAY, async interaction => {
 
 			handleMove(playerMove.customId, gameboard, '🇽');
 			state = checkState(gameboard)
-			await playerMove.update({components: buildBoard(gameboard)})
+			await playerMove.update({components: buildBoard(gameboard, true)})
 			if(state != 'inplay') break;
 
 
@@ -41,8 +42,8 @@ new Module('tic tac toe', 'message', PLAY, async interaction => {
 			state = 'cat';
 		}
 	}
-	let result = 'A tie...'
-	if(state == 'x')
+	let result = 'A tie.'
+	if(state == '🇽')
 		result = 'You win...'
 
 	if(state == '🅾️')
@@ -67,10 +68,12 @@ function buildBoard(board, locked = false){
 		rows[i] = new MessageActionRow()
 
 		for(let j=0; j<3; j++){
+		     let color = board[i][j] == '⬛'?"SECONDARY":(board[i][j]=='🅾️'?"DANGER":"PRIMARY")
+
 			let button = new MessageButton()
 				.setCustomId(i+','+j)
 				.setLabel("")
-				.setStyle("SECONDARY")
+				.setStyle(color)
 				.setDisabled(board[i][j] != '⬛' || locked)
 				.setEmoji(board[i][j]);
 
