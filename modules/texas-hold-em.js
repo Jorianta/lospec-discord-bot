@@ -92,13 +92,16 @@ function dealCards(players){
     return deck.slice(0,5)
 }
 
-function startRound(players){
+function playRound(thread, players, smallBlind=0){
     let pot = 0;
     let table = dealCards(players);
+    let revealed = table.slice(0,3)
+
+    thread.send()
+
             
     console.log(players[0].hand)
     console.log(table)
-
 }
 
 function scoreHand(hand){
