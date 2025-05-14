@@ -231,15 +231,13 @@ client.on('interactionCreate', (interaction, user) => {
 // context menu right click app commands
 client.on('interactionCreate', (interaction, user) => {
 	if (!interaction.isMessageContextMenu()) return;
-	
 	checkSlashCommand(user,interaction.commandName,interaction);
 });
+
 // command chat input select dropdown command
 client.on('interactionCreate', (interaction, user) => {
-	console.log('selectiomenu',interaction.isSelectMenu())
 	if (!interaction.isSelectMenu()) return;
-	
-	console.log('WHATS THE NA<E',interaction.customId)
+	console.log('selection menu',interaction.isSelectMenu(), interaction.customId, interaction.values, interaction);
 	checkSlashCommand(user,interaction.customId,interaction);
 });
 
@@ -361,6 +359,9 @@ process.on('uncaughtException', function(err){
 
 //when bot is connected
 client.once('ready', () => {
+
+	if (CONFIG.guildId && CONFIG.siteLogChannelId) client.guilds.cache.get(CONFIG.guildId).channels.cache.get(CONFIG.siteLogChannelId).send('Bot started');
+
 	//store guild info
 	global.guild = client.guilds.cache.first();
 
@@ -372,7 +373,7 @@ client.once('ready', () => {
 
 	log('connected to',guild.name,'as',client.user.username);
 
-	console.log()
+
 
 	loadSlashCommands(client.user.id);
 });
