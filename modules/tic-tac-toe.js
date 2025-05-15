@@ -2,7 +2,7 @@ const { MessageActionRow, MessageButton, ButtonStyle, SlashCommandBuilder } = re
 const Bank = require('./bank.js');
 
 const PLAY = {
-	command: 'playtictactoe', 
+	command: 'play-tic-tac-toe', 
 	description: 'Play a game of tic tac toe'
 };
 
@@ -11,45 +11,58 @@ const BOARD = [ ['⬛','⬛','⬛',],
 				['⬛','⬛','⬛',]]
 
 new Module('tic tac toe', 'message', PLAY, async interaction => {
-	await interaction.deferReply();
-	console.log(interaction.user.id)
+	try{
+		await interaction.deferReply();
+		console.log(interaction.user.id)
 
-	let gameboard = structuredClone(BOARD);
+		let gameboard = structuredClone(BOARD);
 
-	const response = await interaction.editReply({components: buildBoard(gameboard)});
-	const collectorFilter = i => {console.log(i.user.id);
-	return i.user.id === interaction.user.id;}
-	
-	let state = 'inplay'
-	while(state == 'inplay'){
-		try {
-			let playerMove = await response.awaitMessageComponent({ filter: collectorFilter, time: 60000 })
+		const response = await interaction.editReply({components: buildBoard(gameboard)});
 
-			handleMove(playerMove.customId, gameboard, '🇽');
-			state = checkState(gameboard)
-			await playerMove.update({components: buildBoard(gameboard, true)})
-			if(state != 'inplay') break;
+		//If it aint the other player pushing buttons we dont care.
+		const collectorFilter = i => {return i.user.id === interaction.user.id;}
+
+		let playerMove
+		
+		let state = 'inplay'
+			while(state == 'inplay'){
+				try {
+					playerMove = await response.awaitMessageComponent({ filter: collectorFilter, time: 60000 })
+					if(playerMove == undefined) throw("Something is really wrong")
+						
+				} catch (e) {
+					//If something goes wrong (most often a timeout waiting for a player move) stop the game.
+					console.log(e)
+					state = 'timeout';
+				}
+
+				handleMove(playerMove.customId, gameboard, '🇽');
+				state = checkState(gameboard)
+				await playerMove.update({components: buildBoard(gameboard, true)})
+				if(state != 'inplay') break;
 
 
 
-			handleMove(findBestMove(gameboard), gameboard, '🅾️');
-			state = checkState(gameboard)
-			await interaction.editReply({components: buildBoard(gameboard)})
-			if(state != 'inplay') break;
+				handleMove(findBestMove(gameboard), gameboard, '🅾️');
+				state = checkState(gameboard)
+				await interaction.editReply({components: buildBoard(gameboard)})
+				if(state != 'inplay') break;
+			}
 
-		} catch (e) {
-			console.log(e)
-			state = 'cat';
+		let result = 'A tie.'
+		switch(state)
+		{
+			case '🇽': result = 'You win...'; break;
+			case '🅾️': result = 'I win!'; break;
+			case 'timeout': result = "Way to leave me hanging..."; break;
+			default: break;
 		}
+		await interaction.editReply({content: result, components: buildBoard(gameboard, true)});
+		
+	} catch (e) {
+		console.log(e)
+		interaction.editReply({content: 'Something went wrong... I guess the only winning move is not to play.'})
 	}
-	let result = 'A tie.'
-	if(state == '🇽')
-		result = 'You win...'
-
-	if(state == '🅾️')
-		result = 'I win!'
-	await interaction.editReply({content: result, components: buildBoard(gameboard, true)});
-
 });
 
 function handleMove(move, board, player) {
