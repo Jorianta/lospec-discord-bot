@@ -25,8 +25,8 @@ new Module('Blackjack', 'message', PLAY, async (interaction) => {
     try{
         if(bet>0){
             Bank.getBalance(interaction.user.id).then(async (f) => {
-                console.log(f)
-                gameLoop(interaction,bet, f)
+                if(f == undefined) f=0
+                gameLoop(interaction,bet,f)
             })
         }
         else gameLoop(interaction)
@@ -60,50 +60,11 @@ async function gameLoop(interaction, bet=0, playerFunds = 0)
     hitHand(dealer)
     hitHand(player)
     hitHand(dealer)
-
-    let yes = new MessageButton()
-        .setCustomId('y')
-        .setLabel("Yes")
-        .setStyle("SUCCESS")
-    let no = new MessageButton()
-        .setCustomId('n')
-        .setLabel("No")
-        .setStyle("DANGER")
-    let actionBar = new MessageActionRow()
-        .addComponents(yes, no);
+    hitHand(player)
 
     let playerResponse
 
-    //DOUBLE DOWN//
-    if(bet>0 && playerFunds>bet){
-        const doubleQuery = await interaction.editReply({embeds:[{
-            title:"Welcome to the Table, "+playerName+"!",
-            description: "**Dealer's hand: **"+ dealer.cards[0] +
-            ",? \n**Your hand: **"+ player.cards +
-            "\n**Your bet: **"+ bet + 
-            "Ᵽ\nWould you like to double down and add "+bet+"Ᵽ to your bet?"}], components: [actionBar]});
-
-        try {
-            playerResponse = await doubleQuery.awaitMessageComponent({ filter: collectorFilter, time: 60000 })
-
-            if(playerResponse && playerResponse.customId == 'y') {
-                playerFunds -= bet
-                bet*=2
-            }
-
-            playerResponse.update({embeds:[{title:"Welcome to the Table, "+playerName+"!",
-                description: "**Dealer's hand: **"+ dealer.cards[0] +",? \n**Your hand: **"+ player.cards +
-                "\n**Your bet: **"+ bet +
-                "Ᵽ \nIf you do nothing, you surrender!"}], components: [actionBar]});
-        }
-        catch(e) {
-
-        }
-    }
-    
-    hitHand(player)
-
-    actionBar = buildActionBar()
+    let actionBar = buildActionBar(bet>0 && playerFunds>bet)
 
     //GAMEPLAY//
     const gameQuery = await interaction.editReply({embeds:[{
@@ -127,13 +88,21 @@ async function gameLoop(interaction, bet=0, playerFunds = 0)
         }
 
         let move = playerResponse.customId
-        if(move === 'hit')
+        if(move === 'hit' || move === 'double')
         {
             hitHand(player)
-            if(scoreHand(player) > 21)
-            {result = -1
-                break;
+            if(move==='double')
+            {
+                playerFunds -= bet
+                bet*=2
+                result = 1
             }
+            if(scoreHand(player) > 21)
+            {
+                result = -1
+            }
+
+            if(result === 1 || result === -1) break;
         }
         else if(move === 'stay')
         {
@@ -205,7 +174,7 @@ async function gameLoop(interaction, bet=0, playerFunds = 0)
                     description: "**Dealer's hand: **"+ dealer.cards +
                     "\n**Your hand: **"+ player.cards + 
                     "\n**Your bet: **"+ bet +
-                    "Ᵽ\n**Your payout: **"+ payout +
+                    "Ᵽ\n**Your take: **"+ payout +
                     "Ᵽ\n" +resultMessage}], components: []});
 
 }
@@ -242,26 +211,34 @@ function scoreHand(hand) {
     return (hand.count) + 10
 }
 
-function buildActionBar(locked = false){
+function buildActionBar(doubleDown = false){
     actionBar = new MessageActionRow()
 
     let hit = new MessageButton()
-            .setDisabled(locked)
             .setCustomId('hit')
             .setLabel("Hit")
             .setStyle("PRIMARY")
     let stay = new MessageButton()
-            .setDisabled(locked)
             .setCustomId('stay')
             .setLabel("Stay")
             .setStyle("SECONDARY")
+
+    actionBar.addComponents(hit,stay)
+
+    if(doubleDown)
+    {
+        let double = new MessageButton()
+            .setCustomId('double')
+            .setLabel("Double Down")
+            .setStyle("SUCCESS")
+        actionBar.addComponents(double)
+    }
+
     let surrender = new MessageButton()
-            .setDisabled(locked)
             .setCustomId('quit')
             .setLabel("Surrender")
             .setStyle("DANGER")
-
-    actionBar.addComponents(hit,stay,surrender)
+    actionBar.addComponents(surrender)
 
     return actionBar
 }
