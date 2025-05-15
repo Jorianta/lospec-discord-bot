@@ -67,20 +67,20 @@ async function gameLoop(interaction, bet=0, playerFunds = 0)
     let actionBar = buildActionBar(bet>0 && playerFunds>bet)
 
     //GAMEPLAY//
-    const gameQuery = await interaction.editReply({embeds:[{
+    //2 is in play. 1 is a stay. 0 is a surrender. -1 is a bust
+    let result = 2
+
+    while(result>1){
+        let gameQuery = await interaction.editReply({embeds:[{
         title:"Welcome to the Table, "+playerName+"!",
         description: "**Dealer's hand: **"+ dealer.cards[0] +
         ",? \n**Your hand: **"+ player.cards + 
         "\n**Your bet: **"+ bet +
         "Ᵽ \nIf you do nothing, you surrender!"}], components: [actionBar]})
 
-    //2 is in play. 1 is a stay. 0 is a surrender. -1 is a bust
-    let result = 2
-
-    while(result>1){
-
         try {
-            playerResponse = await gameQuery.awaitMessageComponent({ filter: collectorFilter, time: 60000 })
+            playerResponse = await gameQuery.awaitMessageComponent({ filter: collectorFilter, time: 30000 })
+            playerResponse.deferUpdate()
         } catch (e) {
             //If the player ever stops responding, they surrender
             result = 0;
@@ -115,11 +115,11 @@ async function gameLoop(interaction, bet=0, playerFunds = 0)
             break
         }
 
-        playerResponse.update({embeds:[{title:"Welcome to the Table, "+playerName+"!",
-            description: "**Dealer's hand: **"+ dealer.cards[0] +
-            ",? \n**Your hand: **"+ player.cards + 
-            "\n**Your bet: **"+ bet +
-            "Ᵽ \nIf you do nothing, you surrender!"}], components: [actionBar]});
+        // playerResponse.update({embeds:[{title:"Welcome to the Table, "+playerName+"!",
+        //     description: "**Dealer's hand: **"+ dealer.cards[0] +
+        //     ",? \n**Your hand: **"+ player.cards + 
+        //     "\n**Your bet: **"+ bet +
+        //     "Ᵽ \nIf you do nothing, you surrender!"}], components: [actionBar]});
     }
 
     //RESULTS//
@@ -171,12 +171,19 @@ async function gameLoop(interaction, bet=0, playerFunds = 0)
     payout -= bet;
     if(payout!=0) await Bank.adjustBalance(interaction.user.id, payout, "Gambling")
 
-    await playerResponse.update({embeds:[{title:resultTitle,
+    let finalReport = {embeds:[{title:resultTitle,
                     description: "**Dealer's hand: **"+ dealer.cards +
                     "\n**Your hand: **"+ player.cards + 
                     "\n**Your bet: **"+ bet +
                     "Ᵽ\n**Your take: **"+ payout +
-                    "Ᵽ\n" +resultMessage}], components: []});
+                    "Ᵽ\n" +resultMessage}], components: []}
+    //if the player just walks away, this gets mad at us for sending another update for their last response.
+    try {
+        await playerResponse.update(finalReport);
+    } catch (e)
+    {
+         await interaction.editReply(finalReport);
+    }
 
 }
 

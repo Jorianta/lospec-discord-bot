@@ -25,17 +25,19 @@ new Module('tic tac toe', 'message', PLAY, async interaction => {
 		let state = 'inplay'
 			while(state == 'inplay'){
 				try {
-					playerMove = await response.awaitMessageComponent({ filter: collectorFilter, time: 60000 })
+					playerMove = await response.awaitMessageComponent({ filter: collectorFilter, time: 10000 })
+					playerMove.deferUpdate()
 					if(playerMove == undefined) throw("Something is really wrong")
 						
 				} catch (e) {
 					//If something goes wrong (most often a timeout waiting for a player move) stop the game.
 					state = 'timeout';
+					break;
 				}
 
 				handleMove(playerMove.customId, gameboard, '🇽');
 				state = checkState(gameboard)
-				await playerMove.update({components: buildBoard(gameboard, true)})
+				await interaction.editReply({components: buildBoard(gameboard, true)})
 				if(state != 'inplay') break;
 
 
@@ -58,7 +60,7 @@ new Module('tic tac toe', 'message', PLAY, async interaction => {
 		
 	} catch (e) {
 		console.log(e)
-		interaction.editReply({content: 'Something went wrong... I guess the only winning move is not to play.'})
+		interaction.editReply({content: 'Something went wrong... I guess the only winning move is not to play.', components:[]})
 	}
 });
 
