@@ -135,7 +135,7 @@ async function gameLoop(interaction, bet=0, playerFunds = 0)
     {
         resultTitle=playerName+" Surrendered..."
         resultMessage="Don't let the pressure get to you!"
-        payout = Math.ceil(bet/2)
+        payout = Math.floor(bet/2)
     }
     else
     {
@@ -157,8 +157,9 @@ async function gameLoop(interaction, bet=0, playerFunds = 0)
         }
         else if(dealerScore===playerScore){
             resultTitle=playerName+" Pushed."
-            resultMessage="At least you get your money back."
-            payout = bet
+            resultMessage="Not too bad!"
+            //Since this is funny game for funny made up money, lets make it so you EARN money over time playing it.
+            payout = Math.ceil(bet*1.5)
         }
         else{
             resultTitle=playerName+" Lost..."

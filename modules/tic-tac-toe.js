@@ -11,10 +11,8 @@ const BOARD = [ ['⬛','⬛','⬛',],
 				['⬛','⬛','⬛',]]
 
 new Module('tic tac toe', 'message', PLAY, async interaction => {
+	await interaction.deferReply();
 	try{
-		await interaction.deferReply();
-		console.log(interaction.user.id)
-
 		let gameboard = structuredClone(BOARD);
 
 		const response = await interaction.editReply({components: buildBoard(gameboard)});
@@ -32,7 +30,6 @@ new Module('tic tac toe', 'message', PLAY, async interaction => {
 						
 				} catch (e) {
 					//If something goes wrong (most often a timeout waiting for a player move) stop the game.
-					console.log(e)
 					state = 'timeout';
 				}
 
